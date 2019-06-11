@@ -1,0 +1,12 @@
+[package]
+name = "rckad"
+version = "0.0.0"
+authors = ["Sun <huachuang20@gmail.com>"]
+edition = "2018"
+readme = "README.md"
+description = "Efficient and flexible S/Kademlia implementation."
+repository = "https://github.com/rust-cc/rckad"
+keywords = ["Kademlia", "S/Kademlia"]
+license = "MIT/Apache-2.0"
+
+[dependencies]
