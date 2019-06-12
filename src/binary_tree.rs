@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 type TreeNode<K, V> = Option<Box<Node<K, V>>>;
 
-pub type KadTree<K, V> = Node<K, V>;
+pub struct KadTree<K: PartialEq + Serialize, V>(Node<K, V>, usize);
 
 use crate::distance::Distance;
 
@@ -15,11 +15,45 @@ pub struct Node<K: PartialEq + Serialize, V> {
     distance: Distance,
 }
 
-impl<K: PartialEq + Serialize, V> Node<K, V> {
+impl<K: PartialEq + Serialize, V> KadTree<K, V> {
     pub fn new(key: K, value: V) -> Self {
-        Self::root(key, value)
+        KadTree(Node::root(key, value), 8) // Default K_BUCKET
     }
 
+    pub fn set_k_bucket(&mut self, bucket: usize) {
+        self.1 = bucket;
+    }
+
+    pub fn add(&mut self, key: K, value: V) {
+        let distance = Distance::new::<K>(&self.0.key, &key);
+        let new = Node {
+            left: None,
+            right: None,
+            key: key,
+            value: value,
+            distance: distance,
+        };
+        self.0.insert(new);
+    }
+
+    pub fn search(&self, key: &K) -> Option<(&V, bool)> {
+        self.0.search(key)
+    }
+
+    pub fn remove(&mut self, key: &K) {
+        self.0.remove(key);
+    }
+
+    pub fn contains(&self, key: &K) -> bool {
+        if let Some((_, true)) = self.0.search(key) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<K: PartialEq + Serialize, V> Node<K, V> {
     pub fn root(key: K, value: V) -> Self {
         Node {
             left: None,
@@ -27,17 +61,6 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
             key: key,
             value: value,
             distance: Distance::default(),
-        }
-    }
-
-    pub fn add(&self, key: K, value: V) -> Self {
-        let distance = Distance::new::<K>(&self.key, &key);
-        Node {
-            left: None,
-            right: None,
-            key: key,
-            value: value,
-            distance: distance,
         }
     }
 
@@ -104,14 +127,6 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
             }
 
             right.remove(key);
-        }
-    }
-
-    pub fn contains(&self, key: &K) -> bool {
-        if let Some((_, true)) = self.search(key) {
-            true
-        } else {
-            false
         }
     }
 }
