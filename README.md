@@ -7,7 +7,7 @@ Efficient and flexible S/Kademlia implementation.
 use rckad::KadTree;
 
 fn main() {
-    let mut kad = KadTree::new(1, "a"); // self_key, self_value
+    let mut kad = KadTree::new(0); // self_key, self_value
     
     kad.add(2, "b");
     kad.add(3, "c");

@@ -23,6 +23,14 @@ impl Distance {
         base.xor(&target)
     }
 
+    pub fn get(&self, index: usize) -> bool {
+        if index >= 160 {
+            false
+        } else {
+            self.0[index]
+        }
+    }
+
     fn xor(&self, other: &Distance) -> Distance {
         let mut new_binary = BitVec::from_elem(160, false);
 

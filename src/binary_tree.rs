@@ -1,51 +1,99 @@
 use serde::Serialize;
 use std::cmp::Ordering;
 
-type TreeNode<K, V> = Option<Box<Node<K, V>>>;
-
-pub struct KadTree<K: PartialEq + Serialize, V>(Node<K, V>, usize);
-
 use crate::distance::Distance;
+
+const MAX_LEVEL: usize = 8;
+
+pub struct KadTree<K: PartialEq + Serialize, V> {
+    root_key: K,
+    left: TreeNode<K, V>,
+    right: TreeNode<K, V>,
+    k_bucket: usize,
+}
+
+type TreeNode<K, V> = Option<Box<Node<K, V>>>;
 
 pub struct Node<K: PartialEq + Serialize, V> {
     left: TreeNode<K, V>,
     right: TreeNode<K, V>,
-    key: K,
-    value: V,
-    distance: Distance,
+    list: Vec<Cell<K, V>>,
 }
 
+struct Cell<K: PartialEq, V>(K, V, Distance);
+
 impl<K: PartialEq + Serialize, V> KadTree<K, V> {
-    pub fn new(key: K, value: V) -> Self {
-        KadTree(Node::root(key, value), 8) // Default K_BUCKET
-    }
-
-    pub fn set_k_bucket(&mut self, bucket: usize) {
-        self.1 = bucket;
-    }
-
-    pub fn add(&mut self, key: K, value: V) {
-        let distance = Distance::new::<K>(&self.0.key, &key);
-        let new = Node {
+    pub fn new(key: K) -> Self {
+        KadTree {
+            root_key: key,
             left: None,
             right: None,
-            key: key,
-            value: value,
-            distance: distance,
-        };
-        self.0.insert(new);
+            k_bucket: 8, // Default K_BUCKET
+        }
+    }
+
+    pub fn with_k_bucket(key: K, bucket: usize) -> Self {
+        KadTree {
+            root_key: key,
+            left: None,
+            right: None,
+            k_bucket: bucket,
+        }
+    }
+
+    pub fn add(&mut self, key: K, value: V) -> bool {
+        let distance = Distance::new::<K>(&self.root_key, &key);
+        let k_bucket = self.k_bucket.clone();
+
+        if distance.get(0) {
+            if self.right.is_none() {
+                self.right = Some(Box::new(Node::default()));
+            }
+            self.right
+                .as_mut()
+                .and_then(|v| Some(v.insert(Cell(key, value, distance), 1, k_bucket)))
+                .unwrap()
+        } else {
+            if self.left.is_none() {
+                self.left = Some(Box::new(Node::default()));
+            }
+            self.left
+                .as_mut()
+                .and_then(|v| Some(v.insert(Cell(key, value, distance), 1, k_bucket)))
+                .unwrap()
+        }
     }
 
     pub fn search(&self, key: &K) -> Option<(&V, bool)> {
-        self.0.search(key)
+        let distance = Distance::new::<K>(&self.root_key, &key);
+        if distance.get(0) {
+            self.right
+                .as_ref()
+                .and_then(|v| Some(v.search(key, &distance, 1)))
+                .unwrap()
+        } else {
+            self.left
+                .as_ref()
+                .and_then(|v| Some(v.search(key, &distance, 1)))
+                .unwrap()
+        }
     }
 
     pub fn remove(&mut self, key: &K) {
-        self.0.remove(key);
+        let distance = Distance::new::<K>(&self.root_key, &key);
+        if distance.get(0) {
+            self.right
+                .as_mut()
+                .and_then(|v| Some(v.remove(key, &distance, 1)));
+        } else {
+            self.left
+                .as_mut()
+                .and_then(|v| Some(v.remove(key, &distance, 1)));
+        }
     }
 
     pub fn contains(&self, key: &K) -> bool {
-        if let Some((_, true)) = self.0.search(key) {
+        if let Some((_, true)) = self.search(key) {
             true
         } else {
             false
@@ -54,99 +102,128 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
 }
 
 impl<K: PartialEq + Serialize, V> Node<K, V> {
-    pub fn root(key: K, value: V) -> Self {
+    fn default() -> Self {
         Node {
             left: None,
             right: None,
-            key: key,
-            value: value,
-            distance: Distance::default(),
+            list: vec![],
         }
     }
 
-    pub fn insert(&mut self, node: Node<K, V>) -> bool {
-        if self.distance < node.distance {
-            if let Some(ref mut right) = self.right {
-                if right.key == node.key {
-                    right.value = node.value;
-                } else {
-                    return right.insert(node);
+    fn insert(&mut self, mut cell: Cell<K, V>, index: usize, k_bucket: usize) -> bool {
+        if self.right.is_some() || self.left.is_some() {
+            if cell.2.get(index) {
+                if self.right.is_none() {
+                    self.right = Some(Box::new(Node::default()));
                 }
+                self.right
+                    .as_mut()
+                    .and_then(|v| Some(v.insert(cell, index + 1, k_bucket)))
+                    .unwrap()
             } else {
-                self.right = Some(Box::new(node));
+                if self.left.is_none() {
+                    self.left = Some(Box::new(Node::default()));
+                }
+                self.left
+                    .as_mut()
+                    .and_then(|v| Some(v.insert(cell, index + 1, k_bucket)))
+                    .unwrap()
             }
         } else {
-            if let Some(ref mut left) = self.left {
-                if left.key == node.key {
-                    left.value = node.value;
-                } else {
-                    return left.insert(node);
-                }
+            if self.list.len() < k_bucket {
+                self.list.push(cell);
+                true
             } else {
-                self.left = Some(Box::new(node));
+                if index >= MAX_LEVEL {
+                    for v in self.list.iter_mut() {
+                        if v > &mut cell {
+                            *v = cell;
+                            return true;
+                        }
+                    }
+                    return false;
+                } else {
+                    self.right = Some(Box::new(Node::default()));
+                    self.left = Some(Box::new(Node::default()));
+
+                    while !self.list.is_empty() {
+                        let new_cell = self.list.remove(0);
+                        self.insert(new_cell, index, k_bucket);
+                    }
+
+                    self.insert(cell, index, k_bucket)
+                }
             }
         }
-        true
     }
 
-    pub fn search(&self, key: &K) -> Option<(&V, bool)> {
-        if &self.key == key {
-            return Some((&self.value, true));
-        }
-
-        if let Some(ref left) = self.left {
-            let next = left.search(key);
-            if next.is_some() {
-                return next;
+    pub fn search(&self, key: &K, distance: &Distance, index: usize) -> Option<(&V, bool)> {
+        for cell in self.list.iter() {
+            if &cell.0 == key {
+                return Some((&cell.1, true));
             }
         }
 
-        if let Some(ref right) = self.right {
-            let next = right.search(key);
-            if next.is_some() {
-                return next;
+        if distance.get(index) {
+            if let Some(ref right) = self.right {
+                let next = right.search(key, distance, index + 1);
+                if next.is_some() {
+                    return next;
+                }
+            }
+        } else {
+            if let Some(ref left) = self.left {
+                let next = left.search(key, distance, index + 1);
+                if next.is_some() {
+                    return next;
+                }
             }
         }
 
         None
     }
 
-    pub fn remove(&mut self, key: &K) {
-        if let Some(ref mut left) = self.left {
-            if &left.key == key {
-                self.left = None;
-                return;
+    pub fn remove(&mut self, key: &K, distance: &Distance, index: usize) {
+        let mut deleted_index = std::usize::MAX;
+        for (i, cell) in self.list.iter().enumerate() {
+            if &cell.0 == key {
+                deleted_index = i;
             }
-            left.remove(key);
         }
 
-        if let Some(ref mut right) = self.right {
-            if &right.key == key {
-                self.right = None;
-                return;
-            }
+        if deleted_index != std::usize::MAX {
+            self.list.remove(deleted_index);
+            return;
+        }
 
-            right.remove(key);
+        if distance.get(index) {
+            if let Some(ref mut right) = self.right {
+                right.remove(key, distance, index + 1);
+            }
+        } else {
+            if let Some(ref mut left) = self.left {
+                left.remove(key, distance, index + 1);
+            }
         }
     }
 }
 
-impl<K: PartialEq + Serialize, V> Ord for Node<K, V> {
-    fn cmp(&self, other: &Node<K, V>) -> Ordering {
-        self.distance.cmp(&other.distance)
+impl<K: PartialEq, V> Ord for Cell<K, V> {
+    fn cmp(&self, other: &Cell<K, V>) -> Ordering {
+        self.2.cmp(&other.2)
     }
 }
 
-impl<K: PartialEq + Serialize, V> PartialOrd for Node<K, V> {
-    fn partial_cmp(&self, other: &Node<K, V>) -> Option<Ordering> {
+impl<K: PartialEq, V> PartialOrd for Cell<K, V> {
+    fn partial_cmp(&self, other: &Cell<K, V>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<K: PartialEq + Serialize, V> Eq for Node<K, V> {}
+impl<K: PartialEq, V> Eq for Cell<K, V> {}
 
-impl<K: PartialEq + Serialize, V> PartialEq for Node<K, V> {
-    fn eq(&self, other: &Node<K, V>) -> bool {
-        self.key == other.key
+impl<K: PartialEq, V> PartialEq for Cell<K, V> {
+    fn eq(&self, other: &Cell<K, V>) -> bool {
+        self.0 == other.0
     }
 }
