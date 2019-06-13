@@ -1,4 +1,4 @@
-[![Latest Version](https://img.shields.io/badge/crates.io-v0.0.1-green.svg)](https://crates.io/crates/rckad)
+[![Latest Version](https://img.shields.io/badge/crates.io-v0.0.2-green.svg)](https://crates.io/crates/rckad)
 
 # rckad
 Efficient and flexible S/Kademlia implementation.
