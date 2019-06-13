@@ -6,6 +6,14 @@ use sha3::{Digest, Sha3_256};
 pub struct Distance(BitVec);
 
 impl Distance {
+    pub fn max() -> Self {
+        Distance(BitVec::from_elem(160, true))
+    }
+
+    pub fn min() -> Self {
+        Distance(BitVec::from_elem(160, false))
+    }
+
     pub fn new<K: Serialize>(base: &K, target: &K) -> Self {
         let base_byte = bincode::serialize(base).unwrap();
         let target_byte = bincode::serialize(target).unwrap();
@@ -31,7 +39,7 @@ impl Distance {
         }
     }
 
-    fn xor(&self, other: &Distance) -> Distance {
+    pub fn xor(&self, other: &Distance) -> Distance {
         let mut new_binary = BitVec::from_elem(160, false);
 
         for i in 0..160 {
@@ -48,6 +56,6 @@ impl Distance {
 
 impl Default for Distance {
     fn default() -> Self {
-        Distance(BitVec::with_capacity(160))
+        Distance::min()
     }
 }

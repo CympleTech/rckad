@@ -64,7 +64,7 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
         }
     }
 
-    pub fn search(&self, key: &K) -> Option<(&V, bool)> {
+    pub fn search(&self, key: &K) -> Option<(&K, &V, bool)> {
         let distance = Distance::new::<K>(&self.root_key, &key);
         if distance.get(0) {
             self.right
@@ -93,7 +93,7 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
     }
 
     pub fn contains(&self, key: &K) -> bool {
-        if let Some((_, true)) = self.search(key) {
+        if let Some((_, _, true)) = self.search(key) {
             true
         } else {
             false
@@ -157,10 +157,19 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
         }
     }
 
-    pub fn search(&self, key: &K, distance: &Distance, index: usize) -> Option<(&V, bool)> {
-        for cell in self.list.iter() {
+    pub fn search(&self, key: &K, distance: &Distance, index: usize) -> Option<(&K, &V, bool)> {
+        let mut closest_index = std::usize::MAX;
+        let mut closest_distance = Distance::max();
+
+        for (index, cell) in self.list.iter().enumerate() {
             if &cell.0 == key {
-                return Some((&cell.1, true));
+                return Some((&cell.0, &cell.1, true));
+            } else {
+                let dis = distance.xor(&cell.2);
+                if dis < closest_distance {
+                    closest_distance = dis;
+                    closest_index = index;
+                }
             }
         }
 
@@ -180,7 +189,9 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
             }
         }
 
-        None
+        self.list
+            .get(closest_index)
+            .and_then(|cell| Some((&cell.0, &cell.1, false)))
     }
 
     pub fn remove(&mut self, key: &K, distance: &Distance, index: usize) {
