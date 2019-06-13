@@ -130,6 +130,16 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
                     .unwrap()
             }
         } else {
+            let mut need_deleted = std::usize::MAX;
+            for (i, c) in self.list.iter().enumerate() {
+                if c == &cell {
+                    need_deleted = i;
+                }
+            }
+            if need_deleted != std::usize::MAX {
+                self.list.remove(need_deleted);
+            }
+
             if self.list.len() < k_bucket {
                 self.list.push(cell);
                 true

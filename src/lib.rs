@@ -1,7 +1,7 @@
 //! # rckad
 //! Efficient and flexible S/Kademlia implementation.
 //!
-//!     ```rust
+//! ```
 //! use rckad::KadTree;
 //!
 //! fn main() {
