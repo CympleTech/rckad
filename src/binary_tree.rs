@@ -67,11 +67,19 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
     pub fn search(&self, key: &K) -> Option<(&K, &V, bool)> {
         let distance = Distance::new::<K>(&self.root_key, &key);
         if distance.get(0) {
+            if self.right.is_none() {
+                return None;
+            };
+
             self.right
                 .as_ref()
                 .and_then(|v| Some(v.search(key, &distance, 1)))
                 .unwrap()
         } else {
+            if self.left.is_none() {
+                return None;
+            };
+
             self.left
                 .as_ref()
                 .and_then(|v| Some(v.search(key, &distance, 1)))
