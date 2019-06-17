@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut kad = KadTree::new(0);
+        let mut kad = KadTree::new(0, "0");
         kad.add(2, "b");
         kad.add(3, "c");
         kad.add(4, "e");
@@ -15,7 +15,7 @@ mod tests {
         kad.remove(&2);
         assert_eq!(false, kad.contains(&2));
 
-        let mut kad = KadTree::with_k_bucket(0, 2);
+        let mut kad = KadTree::with_k_bucket(0, "0".to_owned(), 2);
 
         for i in 1..(256 * 2 + 2) {
             kad.add(i, format!("{}", i));

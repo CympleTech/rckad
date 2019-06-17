@@ -7,6 +7,7 @@ const MAX_LEVEL: usize = 8;
 
 pub struct KadTree<K: PartialEq + Serialize, V> {
     root_key: K,
+    root_value: V,
     left: TreeNode<K, V>,
     right: TreeNode<K, V>,
     k_bucket: usize,
@@ -23,18 +24,20 @@ pub struct Node<K: PartialEq + Serialize, V> {
 struct Cell<K: PartialEq, V>(K, V, Distance);
 
 impl<K: PartialEq + Serialize, V> KadTree<K, V> {
-    pub fn new(key: K) -> Self {
+    pub fn new(key: K, value: V) -> Self {
         KadTree {
             root_key: key,
+            root_value: value,
             left: None,
             right: None,
             k_bucket: 8, // Default K_BUCKET
         }
     }
 
-    pub fn with_k_bucket(key: K, bucket: usize) -> Self {
+    pub fn with_k_bucket(key: K, value: V, bucket: usize) -> Self {
         KadTree {
             root_key: key,
+            root_value: value,
             left: None,
             right: None,
             k_bucket: bucket,
@@ -68,7 +71,7 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
         let distance = Distance::new::<K>(&self.root_key, &key);
         if distance.get(0) {
             if self.right.is_none() {
-                return None;
+                return Some((&self.root_key, &self.root_value, false));
             };
 
             self.right
@@ -77,7 +80,7 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
                 .unwrap()
         } else {
             if self.left.is_none() {
-                return None;
+                return Some((&self.root_key, &self.root_value, false));
             };
 
             self.left
