@@ -12,7 +12,9 @@ mod tests {
         assert_eq!(Some((&2, &"b", true)), kad.search(&2));
         assert_eq!(true, kad.contains(&2));
 
-        kad.remove(&2);
+        assert_eq!(Some("b"), kad.remove(&2));
+        assert_eq!(None, kad.remove(&5));
+
         assert_eq!(false, kad.contains(&2));
 
         let mut kad = KadTree::with_k_bucket(0, "0".to_owned(), 2);

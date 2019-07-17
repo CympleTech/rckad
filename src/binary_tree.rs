@@ -90,16 +90,14 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
         }
     }
 
-    pub fn remove(&mut self, key: &K) {
+    pub fn remove(&mut self, key: &K) -> Option<V> {
         let distance = Distance::new::<K>(&self.root_key, &key);
         if distance.get(0) {
             self.right
                 .as_mut()
-                .and_then(|v| Some(v.remove(key, &distance, 1)));
+                .and_then(|v| v.remove(key, &distance, 1))
         } else {
-            self.left
-                .as_mut()
-                .and_then(|v| Some(v.remove(key, &distance, 1)));
+            self.left.as_mut().and_then(|v| v.remove(key, &distance, 1))
         }
     }
 
@@ -215,7 +213,7 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
             .and_then(|cell| Some((&cell.0, &cell.1, false)))
     }
 
-    pub fn remove(&mut self, key: &K, distance: &Distance, index: usize) {
+    pub fn remove(&mut self, key: &K, distance: &Distance, index: usize) -> Option<V> {
         let mut deleted_index = std::usize::MAX;
         for (i, cell) in self.list.iter().enumerate() {
             if &cell.0 == key {
@@ -224,19 +222,21 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
         }
 
         if deleted_index != std::usize::MAX {
-            self.list.remove(deleted_index);
-            return;
+            let Cell(_k, v, _d) = self.list.remove(deleted_index);
+            return Some(v);
         }
 
         if distance.get(index) {
             if let Some(ref mut right) = self.right {
-                right.remove(key, distance, index + 1);
+                return right.remove(key, distance, index + 1);
             }
         } else {
             if let Some(ref mut left) = self.left {
-                left.remove(key, distance, index + 1);
+                return left.remove(key, distance, index + 1);
             }
         }
+
+        None
     }
 }
 
