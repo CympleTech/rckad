@@ -25,7 +25,7 @@
 //!     assert_eq!(Some((&61, &"61".to_owned(), false)), kad.search(&131));
 //! }
 //! ```
-
+#[allow(late_bound_lifetime_arguments)]
 mod binary_tree;
 mod distance;
 

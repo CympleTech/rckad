@@ -5,7 +5,7 @@ use crate::distance::Distance;
 
 const MAX_LEVEL: usize = 8;
 
-pub struct KadTree<K: PartialEq + Serialize, V> {
+pub struct KadTree<K: PartialEq + Serialize + Clone, V> {
     root_key: K,
     root_value: V,
     left: TreeNode<K, V>,
@@ -15,7 +15,7 @@ pub struct KadTree<K: PartialEq + Serialize, V> {
 
 type TreeNode<K, V> = Option<Box<Node<K, V>>>;
 
-pub struct Node<K: PartialEq + Serialize, V> {
+pub struct Node<K: PartialEq + Serialize + Clone, V> {
     left: TreeNode<K, V>,
     right: TreeNode<K, V>,
     list: Vec<Cell<K, V>>,
@@ -23,7 +23,7 @@ pub struct Node<K: PartialEq + Serialize, V> {
 
 struct Cell<K: PartialEq, V>(K, V, Distance);
 
-impl<K: PartialEq + Serialize, V> KadTree<K, V> {
+impl<K: PartialEq + Serialize + Clone, V> KadTree<K, V> {
     pub fn new(key: K, value: V) -> Self {
         KadTree {
             root_key: key,
@@ -108,9 +108,20 @@ impl<K: PartialEq + Serialize, V> KadTree<K, V> {
             false
         }
     }
+
+    pub fn keys(&self) -> Vec<K> {
+        let mut vec = vec![];
+        if self.left.is_some() {
+            self.left.as_ref().unwrap().keys(&mut vec);
+        }
+        if self.right.is_some() {
+            self.right.as_ref().unwrap().keys(&mut vec);
+        }
+        vec
+    }
 }
 
-impl<K: PartialEq + Serialize, V> Node<K, V> {
+impl<K: PartialEq + Serialize + Clone, V> Node<K, V> {
     fn default() -> Self {
         Node {
             left: None,
@@ -238,6 +249,20 @@ impl<K: PartialEq + Serialize, V> Node<K, V> {
 
         None
     }
+
+    pub fn keys(&self, vec: &mut Vec<K>) {
+        for i in self.list.iter() {
+            vec.push(i.key().clone());
+        }
+
+        if let Some(ref left) = self.left {
+            left.keys(vec);
+        }
+
+        if let Some(ref right) = self.right {
+            right.keys(vec);
+        }
+    }
 }
 
 impl<K: PartialEq, V> Ord for Cell<K, V> {
@@ -257,5 +282,11 @@ impl<K: PartialEq, V> Eq for Cell<K, V> {}
 impl<K: PartialEq, V> PartialEq for Cell<K, V> {
     fn eq(&self, other: &Cell<K, V>) -> bool {
         self.0 == other.0
+    }
+}
+
+impl<K: PartialEq, V> Cell<K, V> {
+    fn key(&self) -> &K {
+        &self.0
     }
 }
