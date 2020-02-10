@@ -5,6 +5,7 @@ use crate::distance::Distance;
 
 const MAX_LEVEL: usize = 8;
 
+#[derive(Default)]
 pub struct KadTree<K: PartialEq + Serialize + Clone, V> {
     root_key: K,
     root_value: V,
