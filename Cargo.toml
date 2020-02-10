@@ -10,7 +10,7 @@ keywords = ["Kademlia"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-serde = "1.0"
-bincode = "1.0"
+serde = "1"
+bincode = "1"
 bit-vec = { version = "0.6", default-features = false }
 sha3 = "0.8"
