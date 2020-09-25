@@ -1,7 +1,7 @@
-[![Latest Version](https://img.shields.io/badge/crates.io-v0.0.6-green.svg)](https://crates.io/crates/rckad)
+[![Latest Version](https://img.shields.io/badge/crates.io-v0.1.0-green.svg)](https://crates.io/crates/rckad)
 
 # rckad
-Efficient and flexible S/Kademlia implementation.
+Efficient and flexible Kademlia implementation. (no-std)
 
 ```rust
 use rckad::KadTree;
@@ -24,7 +24,7 @@ fn main() {
         kad.add(i, format!("{}", i));
     }
 
-    assert_eq!(Some((&61, &"61".to_owned(), false)), kad.search(&131));
+    assert_eq!(Some((&26, &"26".to_owned(), false)), kad.search(&14));
 }
 
 ```
@@ -41,4 +41,3 @@ This project is licensed under， it's your choice.
    http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license ([LICENSE-MIT](LICENSE-MIT) or
    http://opensource.org/licenses/MIT)
-

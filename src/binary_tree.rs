@@ -1,5 +1,7 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 use serde::Serialize;
-use std::cmp::Ordering;
 
 use crate::distance::Distance;
 
@@ -111,7 +113,7 @@ impl<K: PartialEq + Serialize + Clone, V> KadTree<K, V> {
     }
 
     pub fn keys(&self) -> Vec<K> {
-        let mut vec = vec![];
+        let mut vec = Vec::new();
         if self.left.is_some() {
             self.left.as_ref().unwrap().keys(&mut vec);
         }
@@ -127,7 +129,7 @@ impl<K: PartialEq + Serialize + Clone, V> Node<K, V> {
         Node {
             left: None,
             right: None,
-            list: vec![],
+            list: Vec::new(),
         }
     }
 
@@ -151,13 +153,13 @@ impl<K: PartialEq + Serialize + Clone, V> Node<K, V> {
                     .unwrap()
             }
         } else {
-            let mut need_deleted = std::usize::MAX;
+            let mut need_deleted = usize::MAX;
             for (i, c) in self.list.iter().enumerate() {
                 if c == &cell {
                     need_deleted = i;
                 }
             }
-            if need_deleted != std::usize::MAX {
+            if need_deleted != usize::MAX {
                 self.list.remove(need_deleted);
             }
 
@@ -189,7 +191,7 @@ impl<K: PartialEq + Serialize + Clone, V> Node<K, V> {
     }
 
     pub fn search(&self, key: &K, distance: &Distance, index: usize) -> Option<(&K, &V, bool)> {
-        let mut closest_index = std::usize::MAX;
+        let mut closest_index = usize::MAX;
         let mut closest_distance = Distance::max();
 
         for (index, cell) in self.list.iter().enumerate() {
@@ -226,14 +228,14 @@ impl<K: PartialEq + Serialize + Clone, V> Node<K, V> {
     }
 
     pub fn remove(&mut self, key: &K, distance: &Distance, index: usize) -> Option<V> {
-        let mut deleted_index = std::usize::MAX;
+        let mut deleted_index = usize::MAX;
         for (i, cell) in self.list.iter().enumerate() {
             if &cell.0 == key {
                 deleted_index = i;
             }
         }
 
-        if deleted_index != std::usize::MAX {
+        if deleted_index != usize::MAX {
             let Cell(_k, v, _d) = self.list.remove(deleted_index);
             return Some(v);
         }

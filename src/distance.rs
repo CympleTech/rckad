@@ -1,6 +1,5 @@
+use alloc::vec::Vec;
 use bit_vec::BitVec;
-use serde::Serialize;
-use sha3::{Digest, Sha3_256};
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
 pub struct Distance(BitVec);
@@ -14,18 +13,16 @@ impl Distance {
         Distance(BitVec::from_elem(160, false))
     }
 
-    pub fn new<K: Serialize>(base: &K, target: &K) -> Self {
-        let base_byte = bincode::serialize(base).unwrap();
-        let target_byte = bincode::serialize(target).unwrap();
+    pub fn new<K: serde::Serialize>(base: &K, target: &K) -> Self {
+        let base_byte = postcard::to_allocvec(base).unwrap_or(Vec::new());
+        let target_byte = postcard::to_allocvec(target).unwrap_or(Vec::new());
 
-        let mut base_hasher = Sha3_256::new();
-        base_hasher.input(base_byte);
-        let base_source = BitVec::from_bytes(&base_hasher.result());
+        let hash1 = blake3::hash(&base_byte);
+        let base_source = BitVec::from_bytes(hash1.as_bytes());
         let base = Distance((0..160).map(|i| base_source[i]).collect());
 
-        let mut target_hasher = Sha3_256::new();
-        target_hasher.input(target_byte);
-        let target_source = BitVec::from_bytes(&target_hasher.result());
+        let hash2 = blake3::hash(&target_byte);
+        let target_source = BitVec::from_bytes(hash2.as_bytes());
         let target = Distance((0..160).map(|i| target_source[i]).collect());
 
         base.xor(&target)

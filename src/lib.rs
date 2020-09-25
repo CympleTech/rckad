@@ -22,10 +22,15 @@
 //!         kad.add(i, format!("{}", i));
 //!     }
 //!
-//!     assert_eq!(Some((&61, &"61".to_owned(), false)), kad.search(&131));
+//!     assert_eq!(Some((&26, &"26".to_owned(), false)), kad.search(&14));
 //! }
 //! ```
-#[allow(late_bound_lifetime_arguments)]
+
+#![no_std]
+extern crate alloc;
+
+//#[allow(late_bound_lifetime_arguments)]
+
 mod binary_tree;
 mod distance;
 
